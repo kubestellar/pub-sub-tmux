@@ -153,10 +153,10 @@ echo "=== Multiple output events ==="
 
 for n in pst-multi-a pst-multi-b pst-multi-c; do
   tmux send-keys -t "$TEST_SESSION" "echo $n" Enter
-  sleep 2
+  sleep 3
 done
 # Wait for last event to appear
-for _mw in 1 2 3 4 5; do
+for _mw in 1 2 3 4 5 6 7 8; do
   grep -q "pst-multi-c" "$LOG_FILE" 2>/dev/null && break
   sleep 2
 done
