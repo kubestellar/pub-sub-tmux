@@ -173,6 +173,13 @@ cleanup() {
 }
 trap cleanup TERM INT HUP EXIT
 
+# When running via pipe-pane, stderr goes to the terminal which pipe-pane
+# captures, creating a feedback loop. Auto-redirect to /dev/null if stdin
+# is not a terminal (i.e., we're receiving piped input).
+if [ ! -t 0 ] && [ -z "${PST_KEEP_STDERR:-}" ]; then
+  exec 2>/dev/null
+fi
+
 pst_log "publisher started: session=$SESSION pane=$PANE cli=$CLI source=$SOURCE"
 
 while IFS= read -r raw_line; do

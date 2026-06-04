@@ -12,7 +12,7 @@ git clone https://github.com/kubestellar/pub-sub-tmux.git
 cd pub-sub-tmux && make install
 
 # Attach publisher to an existing tmux session
-tmux pipe-pane -t mysession -o "pst-publish --session mysession --cli claude"
+tmux pipe-pane -t mysession -o "pst-publish --session mysession --cli claude 2>/dev/null"
 
 # Subscribe to events (in another terminal)
 pst-subscribe mysession
