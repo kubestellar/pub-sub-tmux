@@ -84,9 +84,27 @@ fi
 LOG_FILE="$(pst_log_file "$SESSION")"
 
 if [ ! -f "$LOG_FILE" ]; then
-  echo "error: no log file for session '$SESSION' at $LOG_FILE" >&2
-  echo "hint: is pst-publish running for this session?" >&2
-  exit 1
+  if [ "$FOLLOW" = "true" ]; then
+    echo "waiting for log file: $LOG_FILE" >&2
+    PST_WAIT_TIMEOUT=30
+    _waited=0
+    while [ ! -f "$LOG_FILE" ] && [ "$_waited" -lt "$PST_WAIT_TIMEOUT" ]; do
+      sleep 1
+      _waited=$((_waited + 1))
+    done
+    if [ ! -f "$LOG_FILE" ]; then
+      echo "error: log file not created after ${PST_WAIT_TIMEOUT}s — is pst-publish running?" >&2
+      exit 1
+    fi
+    # File just appeared — read from beginning to catch initial events
+    if [ -z "$LAST_N" ]; then
+      LAST_N="+1"
+    fi
+  else
+    echo "error: no log file for session '$SESSION' at $LOG_FILE" >&2
+    echo "hint: is pst-publish running for this session?" >&2
+    exit 1
+  fi
 fi
 
 _pst_fast_type() {
