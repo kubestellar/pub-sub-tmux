@@ -47,8 +47,8 @@ if [ -z "$SESSION" ]; then
   usage
 fi
 
-if [ -z "$TEXT" ] && [ -z "$KEY" ]; then
-  echo "error: --text or --key is required" >&2
+if [ -z "$TEXT" ] && [ -z "$KEY" ] && [ "$ENTER" != "true" ]; then
+  echo "error: --text, --key, or --enter is required" >&2
   usage
 fi
 
@@ -60,7 +60,7 @@ if [ ! -p "$CMD_FIFO" ]; then
   exit 1
 fi
 
-if [ -n "$TEXT" ]; then
+if [ -n "$TEXT" ] || [ "$ENTER" = "true" ]; then
   printf '{"type":"send_keys","text":"%s","enter":%s}\n' \
     "$(json_escape "$TEXT")" "$ENTER" > "$CMD_FIFO"
 elif [ -n "$KEY" ]; then

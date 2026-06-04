@@ -37,18 +37,33 @@ pst_cmd_fifo() {
 }
 
 pst_json_field() {
-  local field="$1"
-  sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1
+  local field="$1" input
+  input=$(cat)
+  if command -v python3 &>/dev/null; then
+    echo "$input" | python3 -c "import json,sys; d=json.loads(sys.stdin.read()); print(d.get('$field',''))" 2>/dev/null
+  else
+    echo "$input" | sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1
+  fi
 }
 
 pst_json_int_field() {
-  local field="$1"
-  sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p" | head -1
+  local field="$1" input
+  input=$(cat)
+  if command -v python3 &>/dev/null; then
+    echo "$input" | python3 -c "import json,sys; d=json.loads(sys.stdin.read()); v=d.get('$field',0); print(int(v) if v is not None else 0)" 2>/dev/null
+  else
+    echo "$input" | sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p" | head -1
+  fi
 }
 
 pst_json_bool_field() {
-  local field="$1"
-  sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\([a-z]*\).*/\1/p" | head -1
+  local field="$1" input
+  input=$(cat)
+  if command -v python3 &>/dev/null; then
+    echo "$input" | python3 -c "import json,sys; d=json.loads(sys.stdin.read()); print(str(d.get('$field','false')).lower())" 2>/dev/null
+  else
+    echo "$input" | sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\([a-z]*\).*/\1/p" | head -1
+  fi
 }
 
 pst_ensure_fifo() {

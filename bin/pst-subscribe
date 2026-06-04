@@ -62,49 +62,44 @@ if [ ! -f "$LOG_FILE" ]; then
   exit 1
 fi
 
-filter_line() {
-  local line="$1"
-  if [ -z "$FILTER" ]; then
-    echo "$line"
-    return
-  fi
-  local type
-  type=$(echo "$line" | pst_json_field "type")
-  if echo ",$FILTER," | grep -q ",$type,"; then
-    echo "$line"
-  fi
+_pst_fast_type() {
+  echo "$1" | sed -n 's/.*"type"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
 }
 
-since_filter() {
-  if [ -z "$SINCE" ]; then
-    cat
-    return
+should_include() {
+  local line="$1"
+  if [ -n "$SINCE" ] && [ -n "$SINCE_CUTOFF" ]; then
+    local ts
+    ts=$(echo "$line" | sed -n 's/.*"ts"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    if [ -n "$ts" ] && [[ ! "$ts" > "$SINCE_CUTOFF" ]]; then
+      return 1
+    fi
   fi
-  local unit="${SINCE: -1}"
-  local val="${SINCE%?}"
-  local seconds=0
-  case "$unit" in
-    s) seconds="$val" ;;
-    m) seconds=$((val * 60)) ;;
-    h) seconds=$((val * 3600)) ;;
-    d) seconds=$((val * 86400)) ;;
+  if [ -n "$FILTER" ]; then
+    local type
+    type=$(_pst_fast_type "$line")
+    if ! echo ",$FILTER," | grep -q ",$type,"; then
+      return 1
+    fi
+  fi
+  return 0
+}
+
+SINCE_CUTOFF=""
+if [ -n "$SINCE" ]; then
+  local_unit="${SINCE: -1}"
+  local_val="${SINCE%?}"
+  local_seconds=0
+  case "$local_unit" in
+    s) local_seconds="$local_val" ;;
+    m) local_seconds=$((local_val * 60)) ;;
+    h) local_seconds=$((local_val * 3600)) ;;
+    d) local_seconds=$((local_val * 86400)) ;;
     *) echo "error: invalid --since unit (use s/m/h/d)" >&2; exit 1 ;;
   esac
-  local cutoff
-  cutoff=$(date -u -d "-${seconds} seconds" +%Y-%m-%dT%H:%M:%S 2>/dev/null || \
-           date -u -v-"${seconds}"S +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo "")
-  if [ -z "$cutoff" ]; then
-    cat
-    return
-  fi
-  while IFS= read -r line; do
-    local ts
-    ts=$(echo "$line" | pst_json_field "ts")
-    if [ -n "$ts" ] && [[ "$ts" > "$cutoff" ]]; then
-      echo "$line"
-    fi
-  done
-}
+  SINCE_CUTOFF=$(date -u -d "-${local_seconds} seconds" +%Y-%m-%dT%H:%M:%S 2>/dev/null || \
+                 date -u -v-"${local_seconds}"S +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo "")
+fi
 
 if [ "$FOLLOW" = "true" ]; then
   TAIL_ARGS=("-f")
@@ -113,15 +108,15 @@ if [ "$FOLLOW" = "true" ]; then
   else
     TAIL_ARGS+=("-n" "0")
   fi
-  tail "${TAIL_ARGS[@]}" "$LOG_FILE" | since_filter | while IFS= read -r line; do
-    filter_line "$line"
+  tail "${TAIL_ARGS[@]}" "$LOG_FILE" | while IFS= read -r line; do
+    should_include "$line" && echo "$line"
   done
 else
   if [ -n "$LAST_N" ]; then
     tail -n "$LAST_N" "$LOG_FILE"
   else
     cat "$LOG_FILE"
-  fi | since_filter | while IFS= read -r line; do
-    filter_line "$line"
+  fi | while IFS= read -r line; do
+    should_include "$line" && echo "$line"
   done
 fi
