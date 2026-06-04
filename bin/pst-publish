@@ -72,8 +72,8 @@ if [ -z "$SESSION" ]; then
   usage
 fi
 
-if echo "$SESSION" | grep -qE '[[:space:]/\\]'; then
-  pst_log "warning: session name '$SESSION' contains spaces or slashes — may cause issues with tmux and file paths"
+if echo "$SESSION" | grep -qE '[[:space:]/\\:]'; then
+  pst_log "warning: session name '$SESSION' contains spaces, slashes, or colons — may cause issues with tmux and file paths"
 fi
 
 pst_ensure_dirs

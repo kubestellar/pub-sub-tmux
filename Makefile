@@ -19,6 +19,7 @@ install:
 uninstall:
 	@rm -f $(BINDIR)/pst-publish $(BINDIR)/pst-subscribe $(BINDIR)/pst-send
 	@rm -rf $(LIBDIR)
+	@rm -rf $(CONFDIR)
 	@echo "pub-sub-tmux removed from $(BINDIR)"
 
 test: test-patterns test-integration
