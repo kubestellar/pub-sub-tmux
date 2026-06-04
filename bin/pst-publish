@@ -142,6 +142,9 @@ if [ -p "$CMD_FIFO" ]; then
         send_special)
           key=$(echo "$cmd_json" | pst_json_field "key")
           [ -n "$key" ] && tmux send-keys -t "$SESSION" "$key"
+          local_seq=$((local_seq + 1))
+          json_event "$SESSION" "$PANE" "cmd" "$local_seq" "command_received" \
+            "{\"key\":$(json_string "$key"),\"sender\":\"pst-send\"}" >> "$LOG_FILE"
           ;;
       esac
     done

@@ -79,6 +79,7 @@ pst_ensure_fifo() {
   local fifo="$1"
   if [ ! -p "$fifo" ]; then
     rm -f "$fifo" 2>/dev/null
-    mkfifo "$fifo" 2>/dev/null || { sudo mkfifo "$fifo" && sudo chmod 666 "$fifo"; }
+    mkfifo -m 666 "$fifo" 2>/dev/null || mkfifo "$fifo" 2>/dev/null || { sudo mkfifo "$fifo" && sudo chmod 666 "$fifo"; }
+    chmod 666 "$fifo" 2>/dev/null || true
   fi
 }

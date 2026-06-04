@@ -70,20 +70,27 @@ SEND_TIMEOUT_SEC=5
 
 _pst_write_fifo() {
   local msg="$1"
-  printf '%s\n' "$msg" > "$CMD_FIFO" &
-  local wpid=$!
-  local elapsed=0
-  while kill -0 "$wpid" 2>/dev/null; do
-    sleep 1
-    elapsed=$((elapsed + 1))
-    if [ "$elapsed" -ge "$SEND_TIMEOUT_SEC" ]; then
-      kill -9 "$wpid" 2>/dev/null
-      wait "$wpid" 2>/dev/null
-      echo "error: write to FIFO timed out after ${SEND_TIMEOUT_SEC}s — is pst-publish running?" >&2
+  local lockfile="${CMD_FIFO}.lock"
+  (
+    flock -w "$SEND_TIMEOUT_SEC" 9 || {
+      echo "error: could not acquire FIFO lock after ${SEND_TIMEOUT_SEC}s" >&2
       exit 1
-    fi
-  done
-  wait "$wpid" 2>/dev/null
+    }
+    printf '%s\n' "$msg" > "$CMD_FIFO" &
+    local wpid=$!
+    local elapsed=0
+    while kill -0 "$wpid" 2>/dev/null; do
+      sleep 1
+      elapsed=$((elapsed + 1))
+      if [ "$elapsed" -ge "$SEND_TIMEOUT_SEC" ]; then
+        kill -9 "$wpid" 2>/dev/null
+        wait "$wpid" 2>/dev/null
+        echo "error: write to FIFO timed out after ${SEND_TIMEOUT_SEC}s — is pst-publish running?" >&2
+        exit 1
+      fi
+    done
+    wait "$wpid" 2>/dev/null
+  ) 9>"$lockfile"
 }
 
 if [ -n "$TEXT" ] || [ "$ENTER" = "true" ]; then
