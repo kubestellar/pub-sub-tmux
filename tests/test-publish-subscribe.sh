@@ -196,7 +196,14 @@ for _sw in 1 2 3 4 5 6; do
   sleep 2
 done
 
-assert_true "pst-send text appeared in pane" tmux capture-pane -t "$TEST_SESSION" -p | grep -q "sent-via-pst"
+TESTS=$((TESTS + 1))
+if tmux capture-pane -t "$TEST_SESSION" -p 2>/dev/null | grep -q "sent-via-pst"; then
+  PASS=$((PASS + 1))
+  printf '  \033[32mPASS\033[0m pst-send text appeared in pane\n'
+else
+  FAIL=$((FAIL + 1))
+  printf '  \033[31mFAIL\033[0m pst-send text not found in pane\n'
+fi
 
 after_count=$(wc -l < "$LOG_FILE" | tr -d ' ')
 assert_true "new events after pst-send (before=$before_count after=$after_count)" test "$after_count" -gt "$before_count"
