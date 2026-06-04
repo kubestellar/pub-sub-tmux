@@ -114,7 +114,7 @@ if [ -n "$SINCE" ]; then
 fi
 
 if [ "$FOLLOW" = "true" ]; then
-  TAIL_ARGS=("-f")
+  TAIL_ARGS=("-F")
   if [ -n "$LAST_N" ]; then
     TAIL_ARGS+=("-n" "$LAST_N")
   else
