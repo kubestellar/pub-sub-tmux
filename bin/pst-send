@@ -71,11 +71,15 @@ SEND_TIMEOUT_SEC=5
 _pst_write_fifo() {
   local msg="$1"
   local lockfile="${CMD_FIFO}.lock"
-  (
-    flock -w "$SEND_TIMEOUT_SEC" 9 || {
-      echo "error: could not acquire FIFO lock after ${SEND_TIMEOUT_SEC}s" >&2
-      exit 1
-    }
+  if command -v flock &>/dev/null; then
+    (
+      flock -w "$SEND_TIMEOUT_SEC" 9 || {
+        echo "error: could not acquire FIFO lock after ${SEND_TIMEOUT_SEC}s" >&2
+        exit 1
+      }
+      printf '%s\n' "$msg" > "$CMD_FIFO"
+    ) 9>"$lockfile"
+  else
     printf '%s\n' "$msg" > "$CMD_FIFO" &
     local wpid=$!
     local elapsed=0
@@ -90,7 +94,7 @@ _pst_write_fifo() {
       fi
     done
     wait "$wpid" 2>/dev/null
-  ) 9>"$lockfile"
+  fi
 }
 
 if [ -n "$TEXT" ] || [ "$ENTER" = "true" ]; then
