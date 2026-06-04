@@ -43,6 +43,8 @@ Options:
   --enter           Send Enter after text
   --key <key>       Send a special key (e.g. C-c, Escape, Enter, Down)
   -h, --help        Show this help
+
+The write times out after 5 seconds if no publisher is reading the FIFO.
 EOF
   exit 1
 }

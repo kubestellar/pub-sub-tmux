@@ -39,10 +39,12 @@ Usage: pst-subscribe <session> [options]
 
 Options:
   --filter <types>   Comma-separated event types to include
-  --since <duration> Only show events from the last N minutes/hours (e.g. 5m, 1h)
+  --since <duration> Only show events newer than duration (e.g. 30s, 5m, 1h, 2d)
   --last <N>         Show last N events then follow
   --no-follow        Print matching events and exit (don't tail)
   -h, --help         Show this help
+
+In follow mode, waits up to 30s for the log file to appear if it doesn't exist yet.
 EOF
   exit 1
 }

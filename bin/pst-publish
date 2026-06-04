@@ -54,6 +54,11 @@ Options:
   --cli       CLI backend name for pattern matching (claude, copilot, gemini, goose)
   --source    Event source tag (default: pipe-pane)
   --no-raw    Suppress raw_output events (only emit classified events)
+
+Environment:
+  PST_RUN_DIR       Log/FIFO directory (default: /var/run/pub-sub-tmux)
+  PST_PATTERNS_DIR  Pattern files directory (auto-detected from install path)
+  PST_KEEP_STDERR   Set to 1 to keep stderr output (default: auto-redirect to /dev/null)
 EOF
   exit 1
 }
