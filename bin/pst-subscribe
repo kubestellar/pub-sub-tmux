@@ -116,6 +116,10 @@ SINCE_CUTOFF=""
 if [ -n "$SINCE" ]; then
   local_unit="${SINCE: -1}"
   local_val="${SINCE%?}"
+  if [ -z "$local_val" ] || ! echo "$local_val" | grep -qE '^[0-9]+$'; then
+    echo "error: --since value must be a positive integer followed by s/m/h/d (got '$SINCE')" >&2
+    exit 1
+  fi
   local_seconds=0
   case "$local_unit" in
     s) local_seconds="$local_val" ;;
