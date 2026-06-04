@@ -1,0 +1,127 @@
+#!/bin/bash
+# pst-subscribe — subscribe to pub-sub-tmux events
+# Tails the JSONL log for a session, with optional type filtering and --since.
+#
+# Usage: pst-subscribe <session> [--filter type1,type2] [--since 5m] [--last N]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/../lib"
+
+# shellcheck source=../lib/pst-common.sh
+source "${LIB_DIR}/pst-common.sh"
+
+SESSION=""
+FILTER=""
+SINCE=""
+LAST_N=""
+FOLLOW="true"
+
+usage() {
+  cat <<'EOF'
+Usage: pst-subscribe <session> [options]
+
+Options:
+  --filter <types>   Comma-separated event types to include
+  --since <duration> Only show events from the last N minutes/hours (e.g. 5m, 1h)
+  --last <N>         Show last N events then follow
+  --no-follow        Print matching events and exit (don't tail)
+  -h, --help         Show this help
+EOF
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --filter)     FILTER="$2"; shift 2 ;;
+    --since)      SINCE="$2"; shift 2 ;;
+    --last)       LAST_N="$2"; shift 2 ;;
+    --no-follow)  FOLLOW="false"; shift ;;
+    -h|--help)    usage ;;
+    -*)           echo "unknown option: $1" >&2; usage ;;
+    *)
+      if [ -z "$SESSION" ]; then
+        SESSION="$1"; shift
+      else
+        echo "unexpected argument: $1" >&2; usage
+      fi
+      ;;
+  esac
+done
+
+if [ -z "$SESSION" ]; then
+  echo "error: session name is required" >&2
+  usage
+fi
+
+LOG_FILE="$(pst_log_file "$SESSION")"
+
+if [ ! -f "$LOG_FILE" ]; then
+  echo "error: no log file for session '$SESSION' at $LOG_FILE" >&2
+  echo "hint: is pst-publish running for this session?" >&2
+  exit 1
+fi
+
+filter_line() {
+  local line="$1"
+  if [ -z "$FILTER" ]; then
+    echo "$line"
+    return
+  fi
+  local type
+  type=$(echo "$line" | pst_json_field "type")
+  if echo ",$FILTER," | grep -q ",$type,"; then
+    echo "$line"
+  fi
+}
+
+since_filter() {
+  if [ -z "$SINCE" ]; then
+    cat
+    return
+  fi
+  local unit="${SINCE: -1}"
+  local val="${SINCE%?}"
+  local seconds=0
+  case "$unit" in
+    s) seconds="$val" ;;
+    m) seconds=$((val * 60)) ;;
+    h) seconds=$((val * 3600)) ;;
+    d) seconds=$((val * 86400)) ;;
+    *) echo "error: invalid --since unit (use s/m/h/d)" >&2; exit 1 ;;
+  esac
+  local cutoff
+  cutoff=$(date -u -d "-${seconds} seconds" +%Y-%m-%dT%H:%M:%S 2>/dev/null || \
+           date -u -v-"${seconds}"S +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo "")
+  if [ -z "$cutoff" ]; then
+    cat
+    return
+  fi
+  while IFS= read -r line; do
+    local ts
+    ts=$(echo "$line" | pst_json_field "ts")
+    if [ -n "$ts" ] && [[ "$ts" > "$cutoff" ]]; then
+      echo "$line"
+    fi
+  done
+}
+
+if [ "$FOLLOW" = "true" ]; then
+  TAIL_ARGS=("-f")
+  if [ -n "$LAST_N" ]; then
+    TAIL_ARGS+=("-n" "$LAST_N")
+  else
+    TAIL_ARGS+=("-n" "0")
+  fi
+  tail "${TAIL_ARGS[@]}" "$LOG_FILE" | since_filter | while IFS= read -r line; do
+    filter_line "$line"
+  done
+else
+  if [ -n "$LAST_N" ]; then
+    tail -n "$LAST_N" "$LOG_FILE"
+  else
+    cat "$LOG_FILE"
+  fi | since_filter | while IFS= read -r line; do
+    filter_line "$line"
+  done
+fi

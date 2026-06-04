@@ -1,0 +1,13 @@
+# claude.patterns — Claude Code CLI output patterns
+
+IDLE_PATTERN='❯\s*$|^\$ $'
+WORKING_PATTERNS='[◐◑◒◓]|● Read|● Write|● Edit|● Bash|● Agent|Esc to cancel|↳ '
+RATE_LIMIT_PATTERN='out of extra usage|Claude usage limit|monthly limit|quota exhausted|rate limit reached'
+LOGIN_PATTERN='anthropic\.com/login|Please log in|authentication required'
+TRUST_DIALOG_PATTERN='Do you trust the files'
+BYPASS_PATTERN='bypass permissions on'
+TOOL_START_PATTERN='● (Read|Write|Edit|Bash|Agent|WebSearch|WebFetch|Skill|Workflow|NotebookEdit)'
+TOOL_END_PATTERN='✓ (Read|Write|Edit|Bash|Agent|WebSearch|WebFetch|Skill|Workflow|NotebookEdit).*\([0-9]'
+ERROR_PATTERN='Error:|error:|FATAL|panic:|InputValidationError'
+MODEL_PATTERN='model.*claude-|Switched to .*claude-'
+SESSION_END_PATTERN='Session ended|Goodbye'

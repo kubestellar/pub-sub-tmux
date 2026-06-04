@@ -1,0 +1,69 @@
+#!/bin/bash
+# pst-send — send commands back to a tmux session via the pub-sub command FIFO
+#
+# Usage: pst-send --session <name> --text "some text" [--enter] [--key C-c]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/../lib"
+
+# shellcheck source=../lib/pst-common.sh
+source "${LIB_DIR}/pst-common.sh"
+# shellcheck source=../lib/pst-json.sh
+source "${LIB_DIR}/pst-json.sh"
+
+SESSION=""
+TEXT=""
+ENTER="false"
+KEY=""
+
+usage() {
+  cat <<'EOF'
+Usage: pst-send --session <name> [options]
+
+Options:
+  --session <name>  Tmux session name (required)
+  --text <string>   Text to send as keystrokes
+  --enter           Send Enter after text
+  --key <key>       Send a special key (e.g. C-c, Escape, Enter, Down)
+  -h, --help        Show this help
+EOF
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --session)  SESSION="$2"; shift 2 ;;
+    --text)     TEXT="$2"; shift 2 ;;
+    --enter)    ENTER="true"; shift ;;
+    --key)      KEY="$2"; shift 2 ;;
+    -h|--help)  usage ;;
+    *)          echo "unknown option: $1" >&2; usage ;;
+  esac
+done
+
+if [ -z "$SESSION" ]; then
+  echo "error: --session is required" >&2
+  usage
+fi
+
+if [ -z "$TEXT" ] && [ -z "$KEY" ]; then
+  echo "error: --text or --key is required" >&2
+  usage
+fi
+
+CMD_FIFO="$(pst_cmd_fifo "$SESSION")"
+
+if [ ! -p "$CMD_FIFO" ]; then
+  echo "error: no command FIFO for session '$SESSION' at $CMD_FIFO" >&2
+  echo "hint: is pst-publish running for this session?" >&2
+  exit 1
+fi
+
+if [ -n "$TEXT" ]; then
+  printf '{"type":"send_keys","text":"%s","enter":%s}\n' \
+    "$(json_escape "$TEXT")" "$ENTER" > "$CMD_FIFO"
+elif [ -n "$KEY" ]; then
+  printf '{"type":"send_special","key":"%s"}\n' \
+    "$(json_escape "$KEY")" > "$CMD_FIFO"
+fi

@@ -1,0 +1,13 @@
+# copilot.patterns — GitHub Copilot CLI output patterns
+
+IDLE_PATTERN='❯\s*$|^\$ $'
+WORKING_PATTERNS='[◐◑◒◓]|● Read|● Environment loaded|Esc to cancel'
+RATE_LIMIT_PATTERN='Copilot usage limit|out of extra usage|quota exhausted|monthly limit'
+LOGIN_PATTERN='github\.com/login|Please sign in|authentication required|Device code:'
+TRUST_DIALOG_PATTERN='Do you trust the files'
+BYPASS_PATTERN=''
+TOOL_START_PATTERN='● (Read|Write|Edit|Bash|Agent)'
+TOOL_END_PATTERN='✓ (Read|Write|Edit|Bash|Agent).*\([0-9]'
+ERROR_PATTERN='Error:|error:|FATAL|panic:'
+MODEL_PATTERN='Using model:|model.*claude-|model.*gpt-'
+SESSION_END_PATTERN='Session ended|Goodbye'

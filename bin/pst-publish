@@ -1,0 +1,136 @@
+#!/bin/bash
+# pst-publish — pipe-pane publisher
+# Reads tmux pane output from stdin, emits JSONL events to a log file.
+#
+# Usage: tmux pipe-pane -t "$SESSION" -o "exec pst-publish --session $SESSION --cli claude"
+#        echo "some output" | pst-publish --session test --cli claude
+set -u
+cd /tmp 2>/dev/null || true
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/../lib"
+
+# shellcheck source=../lib/pst-common.sh
+source "${LIB_DIR}/pst-common.sh"
+# shellcheck source=../lib/pst-json.sh
+source "${LIB_DIR}/pst-json.sh"
+# shellcheck source=../lib/pst-patterns.sh
+source "${LIB_DIR}/pst-patterns.sh"
+
+SESSION=""
+PANE="0"
+CLI=""
+SOURCE="pipe-pane"
+EMIT_RAW="true"
+
+usage() {
+  cat <<'EOF'
+Usage: pst-publish --session <name> [--pane <id>] [--cli <name>] [--source <name>] [--no-raw]
+
+Options:
+  --session   Tmux session name (required)
+  --pane      Tmux pane ID (default: 0)
+  --cli       CLI backend name for pattern matching (claude, copilot, gemini, goose)
+  --source    Event source tag (default: pipe-pane)
+  --no-raw    Suppress raw_output events (only emit classified events)
+EOF
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --session)  SESSION="$2"; shift 2 ;;
+    --pane)     PANE="$2"; shift 2 ;;
+    --cli)      CLI="$2"; shift 2 ;;
+    --source)   SOURCE="$2"; shift 2 ;;
+    --no-raw)   EMIT_RAW="false"; shift ;;
+    -h|--help)  usage ;;
+    *)          pst_log "unknown option: $1"; usage ;;
+  esac
+done
+
+if [ -z "$SESSION" ]; then
+  pst_log "error: --session is required"
+  usage
+fi
+
+pst_ensure_dirs
+
+LOG_FILE="$(pst_log_file "$SESSION")"
+CMD_FIFO="$(pst_cmd_fifo "$SESSION")"
+touch "$LOG_FILE"
+
+SEQ=0
+if [ -f "$LOG_FILE" ]; then
+  LAST_SEQ=$(tail -1 "$LOG_FILE" 2>/dev/null | pst_json_int_field "seq")
+  SEQ="${LAST_SEQ:-0}"
+fi
+
+if [ -n "$CLI" ]; then
+  if pst_load_patterns "$CLI"; then
+    pst_log "loaded patterns for $CLI"
+  else
+    pst_log "warning: no pattern file for cli=$CLI"
+  fi
+fi
+
+strip_ansi() {
+  perl -pe 's/\e\[[0-9;?]*[a-zA-Z]//g; s/\e\][^\a]*\a//g; s/\e\][^\e]*\e\\//g; s/\e[()(B=>\[]//g; s/\r//g' 2>/dev/null || \
+    cat
+}
+
+pst_ensure_fifo "$CMD_FIFO"
+CMD_READER_PID=""
+if [ -p "$CMD_FIFO" ]; then
+  (
+    exec 3<>"$CMD_FIFO"
+    while IFS= read -r cmd_json <&3; do
+      [ -z "$cmd_json" ] && continue
+      cmd_type=$(echo "$cmd_json" | pst_json_field "type")
+      case "$cmd_type" in
+        send_keys)
+          text=$(echo "$cmd_json" | pst_json_field "text")
+          enter=$(echo "$cmd_json" | pst_json_bool_field "enter")
+          [ -n "$text" ] && tmux send-keys -t "$SESSION" -l "$text"
+          if [ "$enter" = "true" ]; then
+            sleep 0.3
+            tmux send-keys -t "$SESSION" Enter
+          fi
+          SEQ=$((SEQ + 1))
+          json_event "$SESSION" "$PANE" "$SOURCE" "$SEQ" "command_received" \
+            "{\"text\":$(json_string "$text"),\"sender\":\"pst-send\"}" >> "$LOG_FILE"
+          ;;
+        send_special)
+          key=$(echo "$cmd_json" | pst_json_field "key")
+          [ -n "$key" ] && tmux send-keys -t "$SESSION" "$key"
+          ;;
+      esac
+    done
+  ) &
+  CMD_READER_PID=$!
+fi
+
+cleanup() {
+  [ -n "$CMD_READER_PID" ] && kill "$CMD_READER_PID" 2>/dev/null || true
+  exit 0
+}
+trap cleanup TERM INT EXIT
+
+pst_log "publisher started: session=$SESSION pane=$PANE cli=$CLI source=$SOURCE"
+
+while IFS= read -r raw_line; do
+  clean=$(echo "$raw_line" | strip_ansi)
+  clean="${clean#"${clean%%[![:space:]]*}"}"
+  clean="${clean%"${clean##*[![:space:]]}"}"
+  [ -z "$clean" ] && continue
+
+  if [ "$EMIT_RAW" = "true" ]; then
+    SEQ=$((SEQ + 1))
+    json_event "$SESSION" "$PANE" "$SOURCE" "$SEQ" "raw_output" \
+      "{\"line\":$(json_string "$clean")}" >> "$LOG_FILE"
+  fi
+
+  if [ -n "$_PST_PATTERNS_LOADED" ]; then
+    pst_classify_line "$clean" "$SESSION" "$PANE" "$SOURCE" SEQ >> "$LOG_FILE"
+  fi
+done

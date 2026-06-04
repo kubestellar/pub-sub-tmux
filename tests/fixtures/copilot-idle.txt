@@ -1,0 +1,6 @@
+● Environment loaded from .github/copilot-instructions.md and custom instructions
+Done.
+
+ ~/hive-supervisor                                             AI Credits: 54.4
+────────────────────────────────────────────────────────────────────────────────
+❯

@@ -1,0 +1,13 @@
+# gemini.patterns — Gemini CLI output patterns
+
+IDLE_PATTERN='>\s*$|❯\s*$'
+WORKING_PATTERNS='[◐◑◒◓⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]|Thinking|Generating'
+RATE_LIMIT_PATTERN='rate limit|quota exceeded|resource exhausted|429'
+LOGIN_PATTERN='gcloud auth login|authenticate|sign in'
+TRUST_DIALOG_PATTERN=''
+BYPASS_PATTERN=''
+TOOL_START_PATTERN=''
+TOOL_END_PATTERN=''
+ERROR_PATTERN='Error:|ERROR:|FATAL|panic:'
+MODEL_PATTERN='Using model:|gemini-'
+SESSION_END_PATTERN='Session ended|Goodbye'
