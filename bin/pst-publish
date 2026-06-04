@@ -127,6 +127,11 @@ while IFS= read -r raw_line; do
   clean="${clean%"${clean##*[![:space:]]}"}"
   [ -z "$clean" ] && continue
 
+  MAX_LINE_LEN=2000
+  if [ "${#clean}" -gt "$MAX_LINE_LEN" ]; then
+    clean="${clean:0:$MAX_LINE_LEN}"
+  fi
+
   if [ "$EMIT_RAW" = "true" ]; then
     SEQ=$((SEQ + 1))
     json_event "$SESSION" "$PANE" "$SOURCE" "$SEQ" "raw_output" \

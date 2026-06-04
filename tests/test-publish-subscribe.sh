@@ -151,7 +151,7 @@ echo ""
 echo "=== Event envelope completeness ==="
 
 first_event=$(head -1 "$LOG_FILE")
-for field in v ts seq session pane source type data; do
+for field in v ts seq pid session pane source type data; do
   TESTS=$((TESTS + 1))
   if echo "$first_event" | grep -q "\"${field}\""; then
     PASS=$((PASS + 1))

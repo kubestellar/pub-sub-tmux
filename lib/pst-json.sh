@@ -41,11 +41,13 @@ _pst_timestamp() {
   fi
 }
 
+_PST_PUB_PID="$$"
+
 json_event() {
   local session="$1" pane="$2" source="$3" seq="$4" type="$5" data="$6"
   local ts
   ts=$(_pst_timestamp)
-  printf '{"v":1,"ts":"%s","seq":%d,"session":"%s","pane":"%s","source":"%s","type":"%s","data":%s}\n' \
-    "$ts" "$seq" "$(json_escape "$session")" "$(json_escape "$pane")" \
+  printf '{"v":1,"ts":"%s","seq":%d,"pid":%d,"session":"%s","pane":"%s","source":"%s","type":"%s","data":%s}\n' \
+    "$ts" "$seq" "$_PST_PUB_PID" "$(json_escape "$session")" "$(json_escape "$pane")" \
     "$(json_escape "$source")" "$(json_escape "$type")" "$data"
 }

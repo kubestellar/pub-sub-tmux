@@ -182,7 +182,7 @@ echo "=== Event envelope ==="
 output=$(run_fixture "claude" "${FIXTURES_DIR}/claude-rate-limit.txt")
 first_event=$(echo "$output" | grep -v '^$' | head -1)
 TESTS=$((TESTS + 1))
-required_fields=("v" "ts" "seq" "session" "pane" "source" "type" "data")
+required_fields=("v" "ts" "seq" "pid" "session" "pane" "source" "type" "data")
 missing=""
 for field in "${required_fields[@]}"; do
   if ! echo "$first_event" | grep -q "\"${field}\""; then
