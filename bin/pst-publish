@@ -11,7 +11,16 @@ fi
 
 set -u
 cd /tmp 2>/dev/null || true
-LIB_DIR="${SCRIPT_DIR}/../lib"
+
+# Find lib directory: repo layout (../lib/) or installed layout (../lib/pub-sub-tmux/)
+if [ -f "${SCRIPT_DIR}/../lib/pst-common.sh" ]; then
+  LIB_DIR="${SCRIPT_DIR}/../lib"
+elif [ -f "${SCRIPT_DIR}/../lib/pub-sub-tmux/pst-common.sh" ]; then
+  LIB_DIR="${SCRIPT_DIR}/../lib/pub-sub-tmux"
+else
+  echo "error: cannot find pst-common.sh in ../lib/ or ../lib/pub-sub-tmux/" >&2
+  exit 1
+fi
 
 # shellcheck source=../lib/pst-common.sh
 source "${LIB_DIR}/pst-common.sh"

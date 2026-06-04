@@ -1,7 +1,7 @@
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib/pub-sub-tmux
-CONFDIR ?= /etc/pub-sub-tmux
+CONFDIR ?= $(PREFIX)/etc/pub-sub-tmux
 
 .PHONY: install uninstall test test-patterns test-integration
 

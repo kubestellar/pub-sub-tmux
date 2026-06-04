@@ -9,8 +9,14 @@ PST_CONFIG_DIR="${PST_CONFIG_DIR:-/etc/pub-sub-tmux}"
 PST_PATTERNS_DIR="${PST_CONFIG_DIR}/patterns.d"
 
 PST_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ ! -d "$PST_PATTERNS_DIR" ] && [ -d "${PST_SCRIPT_DIR}/../config/patterns.d" ]; then
-  PST_PATTERNS_DIR="${PST_SCRIPT_DIR}/../config/patterns.d"
+if [ ! -d "$PST_PATTERNS_DIR" ]; then
+  # Try repo layout: lib/../config/patterns.d
+  if [ -d "${PST_SCRIPT_DIR}/../config/patterns.d" ]; then
+    PST_PATTERNS_DIR="${PST_SCRIPT_DIR}/../config/patterns.d"
+  # Try installed layout: lib/pub-sub-tmux/../../etc/pub-sub-tmux/patterns.d
+  elif [ -d "${PST_SCRIPT_DIR}/../../etc/pub-sub-tmux/patterns.d" ]; then
+    PST_PATTERNS_DIR="${PST_SCRIPT_DIR}/../../etc/pub-sub-tmux/patterns.d"
+  fi
 fi
 
 pst_log() {
