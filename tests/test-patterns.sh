@@ -61,23 +61,21 @@ assert_event_field() {
   fi
 }
 
+_FIXTURE_OUT="/tmp/pst-fixture-$$.jsonl"
+
 run_fixture() {
   local cli="$1" fixture="$2"
   _PST_CURRENT_STATE="unknown"
   _PST_STATE_CHANGE_TS=0
   pst_load_patterns "$cli"
-  local output=""
   local seq=0
+  : > "$_FIXTURE_OUT"
   while IFS= read -r line; do
     line=$(echo "$line" | sed 's/\r//g')
     [ -z "$line" ] && continue
-    local events
-    events=$(pst_classify_line "$line" "test-session" "0" "pipe-pane" seq)
-    if [ -n "$events" ]; then
-      output="${output}${events}"$'\n'
-    fi
+    pst_classify_line "$line" "test-session" "0" "pipe-pane" seq >> "$_FIXTURE_OUT"
   done < "$fixture"
-  echo "$output"
+  cat "$_FIXTURE_OUT"
 }
 
 # ─── Claude patterns ──────────────────────────────────────────────────────────
@@ -213,4 +211,5 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 printf 'Results: %d tests, \033[32m%d passed\033[0m, \033[31m%d failed\033[0m\n' "$TESTS" "$PASS" "$FAIL"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+rm -f "$_FIXTURE_OUT" 2>/dev/null
 exit "$FAIL"

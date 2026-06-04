@@ -60,10 +60,27 @@ if [ ! -p "$CMD_FIFO" ]; then
   exit 1
 fi
 
+SEND_TIMEOUT_SEC=5
+
+_pst_write_fifo() {
+  local msg="$1"
+  printf '%s\n' "$msg" > "$CMD_FIFO" &
+  local wpid=$!
+  local elapsed=0
+  while kill -0 "$wpid" 2>/dev/null; do
+    sleep 1
+    elapsed=$((elapsed + 1))
+    if [ "$elapsed" -ge "$SEND_TIMEOUT_SEC" ]; then
+      kill "$wpid" 2>/dev/null
+      echo "error: write to FIFO timed out after ${SEND_TIMEOUT_SEC}s — is pst-publish running?" >&2
+      exit 1
+    fi
+  done
+  wait "$wpid" 2>/dev/null
+}
+
 if [ -n "$TEXT" ] || [ "$ENTER" = "true" ]; then
-  printf '{"type":"send_keys","text":"%s","enter":%s}\n' \
-    "$(json_escape "$TEXT")" "$ENTER" > "$CMD_FIFO"
+  _pst_write_fifo "{\"type\":\"send_keys\",\"text\":\"$(json_escape "$TEXT")\",\"enter\":$ENTER}"
 elif [ -n "$KEY" ]; then
-  printf '{"type":"send_special","key":"%s"}\n' \
-    "$(json_escape "$KEY")" > "$CMD_FIFO"
+  _pst_write_fifo "{\"type\":\"send_special\",\"key\":\"$(json_escape "$KEY")\"}"
 fi

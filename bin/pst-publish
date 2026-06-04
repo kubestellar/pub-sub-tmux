@@ -43,7 +43,13 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --session)  SESSION="$2"; shift 2 ;;
-    --pane)     PANE="$2"; shift 2 ;;
+    --pane)
+      PANE="$2"
+      if ! echo "$PANE" | grep -qE '^[0-9]+$'; then
+        pst_log "error: --pane must be numeric, got '$PANE'"
+        exit 1
+      fi
+      shift 2 ;;
     --cli)      CLI="$2"; shift 2 ;;
     --source)   SOURCE="$2"; shift 2 ;;
     --no-raw)   EMIT_RAW="false"; shift ;;

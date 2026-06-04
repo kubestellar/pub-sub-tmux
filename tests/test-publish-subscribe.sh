@@ -1,7 +1,8 @@
 #!/bin/bash
 # test-publish-subscribe.sh — round-trip integration test
 # Creates a tmux session, attaches publisher, subscribes, sends text, verifies events.
-set -euo pipefail
+set -u
+trap '' PIPE
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="${SCRIPT_DIR}/.."
