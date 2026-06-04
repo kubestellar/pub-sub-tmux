@@ -26,7 +26,10 @@ pst_log() {
 pst_ensure_dirs() {
   for d in "$PST_LOG_DIR" "$PST_CMD_DIR"; do
     if [ ! -d "$d" ]; then
-      mkdir -p "$d" 2>/dev/null || sudo mkdir -p "$d"
+      mkdir -p "$d" 2>/dev/null || sudo mkdir -p "$d" 2>/dev/null || {
+        echo "pst: error: cannot create directory: $d" >&2
+        return 1
+      }
       chmod 1777 "$d" 2>/dev/null || true
     fi
   done
