@@ -57,6 +57,10 @@ if [ -z "$SESSION" ]; then
   usage
 fi
 
+if echo "$SESSION" | grep -qE '[[:space:]/\\]'; then
+  pst_log "warning: session name '$SESSION' contains spaces or slashes — may cause issues with tmux and file paths"
+fi
+
 pst_ensure_dirs
 
 LOG_FILE="$(pst_log_file "$SESSION")"
@@ -78,8 +82,14 @@ if [ -n "$CLI" ]; then
 fi
 
 strip_ansi() {
-  perl -pe 's/\e\[[0-9;?]*[a-zA-Z]//g; s/\e\][^\a]*\a//g; s/\e\][^\e]*\e\\//g; s/\e[()(B=>\[]//g; s/\r//g' 2>/dev/null || \
-    cat
+  perl -pe '
+    s/\e\[[0-9;?]*[a-zA-Z]//g;
+    s/\e\][^\a]*\a//g;
+    s/\e\][^\e]*\e\\//g;
+    s/\e[()(B=>\[]//g;
+    s/\r//g;
+    s/[\x00-\x08\x0b\x0c\x0e-\x1f]//g;
+  ' 2>/dev/null || cat
 }
 
 pst_ensure_fifo "$CMD_FIFO"

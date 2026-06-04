@@ -8,6 +8,8 @@ json_escape() {
   s="${s//$'\n'/\\n}"
   s="${s//$'\r'/\\r}"
   s="${s//$'\t'/\\t}"
+  # Strip remaining control characters that would break JSON
+  s=$(printf '%s' "$s" | tr -d '\000-\010\013\014\016-\037')
   printf '%s' "$s"
 }
 

@@ -49,7 +49,12 @@ echo "=== Publisher attach ==="
 
 PST_STDERR="$PST_RUN_DIR/publisher-stderr.txt"
 tmux pipe-pane -t "$TEST_SESSION" -o "env PST_RUN_DIR=$PST_RUN_DIR PST_CONFIG_DIR=$PST_CONFIG_DIR PST_PATTERNS_DIR=$PST_PATTERNS_DIR bash ${BIN_DIR}/pst-publish --session $TEST_SESSION --cli claude 2>$PST_STDERR"
-sleep 5
+
+# Wait for publisher to initialize (produces log file)
+for _wait in 1 2 3 4 5; do
+  [ -s "$PST_RUN_DIR/logs/${TEST_SESSION}.jsonl" ] && break
+  sleep 2
+done
 
 LOG_FILE="$PST_RUN_DIR/logs/${TEST_SESSION}.jsonl"
 if [ -f "$PST_STDERR" ]; then
