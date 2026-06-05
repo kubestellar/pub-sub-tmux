@@ -100,6 +100,28 @@ Adding a new CLI is a single pattern file — no code changes needed.
 - **Bidirectional** — named FIFO per session for sending commands back
 - **Atomic writes** — JSON lines under PIPE_BUF (4096 bytes) are atomic on Linux
 
+## Docker / Container install
+
+```dockerfile
+# Install pub-sub-tmux in a container image
+RUN git clone --depth 1 https://github.com/kubestellar/pub-sub-tmux.git /tmp/pst && \
+    bash /tmp/pst/install.sh /usr/local && \
+    rm -rf /tmp/pst && \
+    mkdir -p /var/run/pub-sub-tmux/logs /var/run/pub-sub-tmux/commands
+```
+
+The runtime directories under `/var/run/pub-sub-tmux/` must exist before `pst-publish` runs. If your container uses a tmpfs `/var/run`, create them at startup:
+
+```bash
+mkdir -p /var/run/pub-sub-tmux/logs /var/run/pub-sub-tmux/commands
+```
+
+Attach to a tmux session in your entrypoint or agent manager:
+
+```bash
+tmux pipe-pane -t mysession -o "pst-publish --session mysession --cli claude"
+```
+
 ## Dependencies
 
 - bash 4.4+, coreutils, tmux 3.2+
