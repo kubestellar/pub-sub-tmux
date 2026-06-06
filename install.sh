@@ -1,5 +1,5 @@
 #!/bin/bash
-# install.sh — install pub-sub-tmux to the system
+# install.sh — install pluk to the system
 #
 # Usage:
 #   ./install.sh [PREFIX]           # from a cloned repo
@@ -12,8 +12,8 @@ if [ -z "$PREFIX" ]; then
   exit 1
 fi
 BINDIR="${PREFIX}/bin"
-LIBDIR="${PREFIX}/lib/pub-sub-tmux"
-CONFDIR="${PREFIX}/etc/pub-sub-tmux"
+LIBDIR="${PREFIX}/lib/pluk"
+CONFDIR="${PREFIX}/etc/pluk"
 
 # Resolve source directory. When piped via curl|bash, $0 is "bash" and
 # there's no local repo — clone to a temp dir automatically.
@@ -29,7 +29,7 @@ _resolve_source() {
   resolved="$(cd "$(dirname "$src")" 2>/dev/null && pwd)" || resolved=""
 
   # Check if we're in the repo (bin/ dir exists alongside us)
-  if [ -n "$resolved" ] && [ -d "${resolved}/bin" ] && [ -f "${resolved}/bin/pst-publish" ]; then
+  if [ -n "$resolved" ] && [ -d "${resolved}/bin" ] && [ -f "${resolved}/bin/pluk-publish" ]; then
     echo "$resolved"
     return
   fi
@@ -38,17 +38,17 @@ _resolve_source() {
   echo "  (piped install detected — cloning repo to temp dir)" >&2
   local tmpdir
   tmpdir="$(mktemp -d)"
-  git clone --depth 1 https://github.com/kubestellar/pub-sub-tmux.git "$tmpdir" >/dev/null 2>&1
+  git clone --depth 1 https://github.com/kubestellar/pluk.git "$tmpdir" >/dev/null 2>&1
   echo "$tmpdir"
 }
 
 SCRIPT_DIR="$(_resolve_source)"
 
-echo "Installing pub-sub-tmux to ${PREFIX}..."
+echo "Installing pluk to ${PREFIX}..."
 
 mkdir -p "$BINDIR" "$LIBDIR" "$CONFDIR/patterns.d"
 
-for bin in pst-publish pst-subscribe pst-send; do
+for bin in pluk-publish pluk-subscribe pluk-send; do
   if [ ! -f "${SCRIPT_DIR}/bin/${bin}" ]; then
     echo "error: ${SCRIPT_DIR}/bin/${bin} not found" >&2
     exit 1
@@ -56,7 +56,7 @@ for bin in pst-publish pst-subscribe pst-send; do
   install -m 755 "${SCRIPT_DIR}/bin/${bin}" "${BINDIR}/${bin}"
 done
 
-for lib in pst-common.sh pst-json.sh pst-patterns.sh; do
+for lib in pluk-common.sh pluk-json.sh pluk-patterns.sh; do
   if [ ! -f "${SCRIPT_DIR}/lib/${lib}" ]; then
     echo "warning: ${SCRIPT_DIR}/lib/${lib} not found — skipping" >&2
     continue
@@ -74,7 +74,7 @@ for pat in "${SCRIPT_DIR}"/config/patterns.d/*.patterns; do
   fi
 done
 
-echo "pub-sub-tmux installed to ${BINDIR}"
-echo "  binaries: ${BINDIR}/pst-{publish,subscribe,send}"
+echo "pluk installed to ${BINDIR}"
+echo "  binaries: ${BINDIR}/pluk-{publish,subscribe,send}"
 echo "  library:  ${LIBDIR}/"
 echo "  patterns: ${CONFDIR}/patterns.d/"

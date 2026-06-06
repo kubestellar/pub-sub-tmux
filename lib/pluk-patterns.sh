@@ -1,10 +1,10 @@
 #!/bin/bash
-# pst-patterns.sh — event classification engine
+# pluk-patterns.sh — event classification engine
 # Loads CLI-specific pattern files and classifies output lines into structured events.
 
-_PST_PATTERNS_LOADED=""
-_PST_CURRENT_STATE="unknown"
-_PST_STATE_CHANGE_TS=0
+_PLUK_PATTERNS_LOADED=""
+_PLUK_CURRENT_STATE="unknown"
+_PLUK_STATE_CHANGE_TS=0
 STATE_DEBOUNCE_SEC="${PST_STATE_DEBOUNCE_SEC:-2}"
 
 IDLE_PATTERN=""
@@ -19,9 +19,9 @@ ERROR_PATTERN=""
 MODEL_PATTERN=""
 SESSION_END_PATTERN=""
 
-pst_load_patterns() {
+pluk_load_patterns() {
   local cli="$1"
-  local pattern_file="${PST_PATTERNS_DIR}/${cli}.patterns"
+  local pattern_file="${PLUK_PATTERNS_DIR}/${cli}.patterns"
   if [ -f "$pattern_file" ]; then
     # Reset all pattern variables to prevent leakage from previous loads
     IDLE_PATTERN=""
@@ -55,13 +55,13 @@ pst_load_patterns() {
     local safe_lines
     safe_lines=$(echo "$cleaned" | grep -E "^[A-Z_][A-Z_0-9]*='[^']*'$")
     eval "$safe_lines"
-    _PST_PATTERNS_LOADED="$cli"
+    _PLUK_PATTERNS_LOADED="$cli"
     return 0
   fi
   return 1
 }
 
-pst_classify_line() {
+pluk_classify_line() {
   local line="$1"
   local session="$2"
   local pane="$3"
@@ -85,14 +85,14 @@ pst_classify_line() {
     fi
     eval "$seq_ref=\$((\$$seq_ref + 1))"
     json_event "$session" "$pane" "$source" "$(eval echo "\$$seq_ref")" "rate_limit" \
-      "{\"cli\":$(json_string "$_PST_PATTERNS_LOADED"),\"message\":$(json_string "$line"),\"resets_at\":$(json_string "$resets_at")}"
+      "{\"cli\":$(json_string "$_PLUK_PATTERNS_LOADED"),\"message\":$(json_string "$line"),\"resets_at\":$(json_string "$resets_at")}"
     return
   fi
 
   if [ -n "$LOGIN_PATTERN" ] && echo "$line" | grep -qE "$LOGIN_PATTERN"; then
     eval "$seq_ref=\$((\$$seq_ref + 1))"
     json_event "$session" "$pane" "$source" "$(eval echo "\$$seq_ref")" "login_required" \
-      "{\"cli\":$(json_string "$_PST_PATTERNS_LOADED"),\"prompt\":$(json_string "$line")}"
+      "{\"cli\":$(json_string "$_PLUK_PATTERNS_LOADED"),\"prompt\":$(json_string "$line")}"
     return
   fi
 
@@ -158,7 +158,7 @@ pst_classify_line() {
   if [ -n "$SESSION_END_PATTERN" ] && echo "$line" | grep -qE "$SESSION_END_PATTERN"; then
     eval "$seq_ref=\$((\$$seq_ref + 1))"
     json_event "$session" "$pane" "$source" "$(eval echo "\$$seq_ref")" "session_ended" \
-      "{\"cli\":$(json_string "$_PST_PATTERNS_LOADED"),\"exit_code\":null,\"duration_sec\":null}"
+      "{\"cli\":$(json_string "$_PLUK_PATTERNS_LOADED"),\"exit_code\":null,\"duration_sec\":null}"
     return
   fi
 
@@ -169,12 +169,12 @@ pst_classify_line() {
     new_state="working"
   fi
 
-  if [ -n "$new_state" ] && [ "$new_state" != "$_PST_CURRENT_STATE" ]; then
-    local elapsed=$((now - _PST_STATE_CHANGE_TS))
+  if [ -n "$new_state" ] && [ "$new_state" != "$_PLUK_CURRENT_STATE" ]; then
+    local elapsed=$((now - _PLUK_STATE_CHANGE_TS))
     if [ "$elapsed" -ge "$STATE_DEBOUNCE_SEC" ]; then
-      local old_state="$_PST_CURRENT_STATE"
-      _PST_CURRENT_STATE="$new_state"
-      _PST_STATE_CHANGE_TS="$now"
+      local old_state="$_PLUK_CURRENT_STATE"
+      _PLUK_CURRENT_STATE="$new_state"
+      _PLUK_STATE_CHANGE_TS="$now"
       eval "$seq_ref=\$((\$$seq_ref + 1))"
       json_event "$session" "$pane" "$source" "$(eval echo "\$$seq_ref")" "state_change" \
         "{\"from\":$(json_string "$old_state"),\"to\":$(json_string "$new_state")}"

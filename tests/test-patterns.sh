@@ -6,11 +6,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="${SCRIPT_DIR}/.."
 LIB_DIR="${PROJECT_DIR}/lib"
 FIXTURES_DIR="${SCRIPT_DIR}/fixtures"
-export PST_PATTERNS_DIR="${PROJECT_DIR}/config/patterns.d"
+export PLUK_PATTERNS_DIR="${PROJECT_DIR}/config/patterns.d"
 
-source "${LIB_DIR}/pst-json.sh"
-export PST_STATE_DEBOUNCE_SEC=0
-source "${LIB_DIR}/pst-patterns.sh"
+source "${LIB_DIR}/pluk-json.sh"
+export PLUK_STATE_DEBOUNCE_SEC=0
+source "${LIB_DIR}/pluk-patterns.sh"
 
 PASS=0
 FAIL=0
@@ -61,19 +61,19 @@ assert_event_field() {
   fi
 }
 
-_FIXTURE_OUT="/tmp/pst-fixture-$$.jsonl"
+_FIXTURE_OUT="/tmp/pluk-fixture-$$.jsonl"
 
 run_fixture() {
   local cli="$1" fixture="$2"
-  _PST_CURRENT_STATE="unknown"
-  _PST_STATE_CHANGE_TS=0
-  pst_load_patterns "$cli"
+  _PLUK_CURRENT_STATE="unknown"
+  _PLUK_STATE_CHANGE_TS=0
+  pluk_load_patterns "$cli"
   local seq=0
   : > "$_FIXTURE_OUT"
   while IFS= read -r line; do
     line=$(echo "$line" | sed 's/\r//g')
     [ -z "$line" ] && continue
-    pst_classify_line "$line" "test-session" "0" "pipe-pane" seq >> "$_FIXTURE_OUT"
+    pluk_classify_line "$line" "test-session" "0" "pipe-pane" seq >> "$_FIXTURE_OUT"
   done < "$fixture"
   cat "$_FIXTURE_OUT"
 }

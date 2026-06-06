@@ -1,8 +1,8 @@
 #!/bin/bash
-# pst-subscribe — subscribe to pub-sub-tmux events
+# pluk-subscribe — subscribe to pluk events
 # Tails the JSONL log for a session, with optional type filtering and --since.
 #
-# Usage: pst-subscribe <session> [--filter type1,type2] [--since 5m] [--last N]
+# Usage: pluk-subscribe <session> [--filter type1,type2] [--since 5m] [--last N]
 set -euo pipefail
 
 _resolve_script() {
@@ -17,16 +17,16 @@ _resolve_script() {
 }
 SCRIPT_DIR="$(_resolve_script "$0")"
 [ -z "$SCRIPT_DIR" ] && SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -f "${SCRIPT_DIR}/../lib/pst-common.sh" ]; then
+if [ -f "${SCRIPT_DIR}/../lib/pluk-common.sh" ]; then
   LIB_DIR="${SCRIPT_DIR}/../lib"
-elif [ -f "${SCRIPT_DIR}/../lib/pub-sub-tmux/pst-common.sh" ]; then
-  LIB_DIR="${SCRIPT_DIR}/../lib/pub-sub-tmux"
+elif [ -f "${SCRIPT_DIR}/../lib/pluk/pluk-common.sh" ]; then
+  LIB_DIR="${SCRIPT_DIR}/../lib/pluk"
 else
-  echo "error: cannot find pst-common.sh" >&2; exit 1
+  echo "error: cannot find pluk-common.sh" >&2; exit 1
 fi
 
-# shellcheck source=../lib/pst-common.sh
-source "${LIB_DIR}/pst-common.sh"
+# shellcheck source=../lib/pluk-common.sh
+source "${LIB_DIR}/pluk-common.sh"
 
 SESSION=""
 FILTER=""
@@ -36,7 +36,7 @@ FOLLOW="true"
 
 usage() {
   cat <<'EOF'
-Usage: pst-subscribe <session> [options]
+Usage: pluk-subscribe <session> [options]
 
 Options:
   --filter <types>   Comma-separated event types to include
@@ -84,7 +84,7 @@ if [ -n "$FILTER" ]; then
   FILTER=$(echo "$FILTER" | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | tr '\n' ',' | sed 's/,$//')
 fi
 
-LOG_FILE="$(pst_log_file "$SESSION")"
+LOG_FILE="$(pluk_log_file "$SESSION")"
 
 if [ ! -f "$LOG_FILE" ]; then
   if [ "$FOLLOW" = "true" ]; then
@@ -96,7 +96,7 @@ if [ ! -f "$LOG_FILE" ]; then
       _waited=$((_waited + 1))
     done
     if [ ! -f "$LOG_FILE" ]; then
-      echo "error: log file not created after ${PST_WAIT_TIMEOUT}s — is pst-publish running?" >&2
+      echo "error: log file not created after ${PST_WAIT_TIMEOUT}s — is pluk-publish running?" >&2
       exit 1
     fi
     # File just appeared — read from beginning to catch initial events
@@ -105,7 +105,7 @@ if [ ! -f "$LOG_FILE" ]; then
     fi
   else
     echo "error: no log file for session '$SESSION' at $LOG_FILE" >&2
-    echo "hint: is pst-publish running for this session?" >&2
+    echo "hint: is pluk-publish running for this session?" >&2
     exit 1
   fi
 fi

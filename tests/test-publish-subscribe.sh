@@ -7,18 +7,18 @@ trap '' PIPE
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="${SCRIPT_DIR}/.."
 BIN_DIR="${PROJECT_DIR}/bin"
-export PST_RUN_DIR="/tmp/pst-test-$$"
-export PST_CONFIG_DIR="${PROJECT_DIR}/config"
-export PST_PATTERNS_DIR="${PROJECT_DIR}/config/patterns.d"
+export PLUK_RUN_DIR="/tmp/pluk-test-$$"
+export PLUK_CONFIG_DIR="${PROJECT_DIR}/config"
+export PLUK_PATTERNS_DIR="${PROJECT_DIR}/config/patterns.d"
 
-TEST_SESSION="pst-test-$$"
+TEST_SESSION="pluk-test-$$"
 PASS=0
 FAIL=0
 TESTS=0
 
 cleanup() {
   tmux kill-session -t "$TEST_SESSION" 2>/dev/null || true
-  rm -rf "$PST_RUN_DIR" 2>/dev/null || true
+  rm -rf "$PLUK_RUN_DIR" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -35,11 +35,11 @@ assert_true() {
   fi
 }
 
-mkdir -p "$PST_RUN_DIR/logs" "$PST_RUN_DIR/commands"
+mkdir -p "$PLUK_RUN_DIR/logs" "$PLUK_RUN_DIR/commands"
 
 echo "=== Setup ==="
 echo "  test session: $TEST_SESSION"
-echo "  run dir: $PST_RUN_DIR"
+echo "  run dir: $PLUK_RUN_DIR"
 
 tmux new-session -d -s "$TEST_SESSION" -x 120 -y 40
 sleep 0.5
@@ -48,20 +48,20 @@ assert_true "tmux session created" tmux has-session -t "$TEST_SESSION"
 echo ""
 echo "=== Publisher attach ==="
 
-PST_STDERR="$PST_RUN_DIR/publisher-stderr.txt"
-tmux pipe-pane -t "$TEST_SESSION" -o "env PST_RUN_DIR=$PST_RUN_DIR PST_CONFIG_DIR=$PST_CONFIG_DIR PST_PATTERNS_DIR=$PST_PATTERNS_DIR bash ${BIN_DIR}/pst-publish --session $TEST_SESSION --cli claude 2>$PST_STDERR"
+PLUK_STDERR="$PLUK_RUN_DIR/publisher-stderr.txt"
+tmux pipe-pane -t "$TEST_SESSION" -o "env PLUK_RUN_DIR=$PLUK_RUN_DIR PLUK_CONFIG_DIR=$PLUK_CONFIG_DIR PLUK_PATTERNS_DIR=$PLUK_PATTERNS_DIR bash ${BIN_DIR}/pluk-publish --session $TEST_SESSION --cli claude 2>$PLUK_STDERR"
 
 # Wait for publisher to initialize — send a probe and wait for it to appear
 sleep 2
-tmux send-keys -t "$TEST_SESSION" "echo pst-init-probe" Enter
+tmux send-keys -t "$TEST_SESSION" "echo pluk-init-probe" Enter
 for _wait in 1 2 3 4 5 6 7 8; do
-  grep -q "pst-init-probe" "$PST_RUN_DIR/logs/${TEST_SESSION}.jsonl" 2>/dev/null && break
+  grep -q "pluk-init-probe" "$PLUK_RUN_DIR/logs/${TEST_SESSION}.jsonl" 2>/dev/null && break
   sleep 2
 done
 
-LOG_FILE="$PST_RUN_DIR/logs/${TEST_SESSION}.jsonl"
-if [ -f "$PST_STDERR" ]; then
-  printf '  stderr: %s\n' "$(head -5 "$PST_STDERR" 2>/dev/null)"
+LOG_FILE="$PLUK_RUN_DIR/logs/${TEST_SESSION}.jsonl"
+if [ -f "$PLUK_STDERR" ]; then
+  printf '  stderr: %s\n' "$(head -5 "$PLUK_STDERR" 2>/dev/null)"
 fi
 if [ ! -f "$LOG_FILE" ]; then
   sleep 3
@@ -71,15 +71,15 @@ assert_true "log file created" test -f "$LOG_FILE"
 echo ""
 echo "=== Raw output events ==="
 
-tmux send-keys -t "$TEST_SESSION" "echo pst-hello-42" Enter
+tmux send-keys -t "$TEST_SESSION" "echo pluk-hello-42" Enter
 for _hw in 1 2 3 4 5; do
-  grep -q 'pst-hello-42' "$LOG_FILE" 2>/dev/null && break
+  grep -q 'pluk-hello-42' "$LOG_FILE" 2>/dev/null && break
   sleep 2
 done
 
 assert_true "log file has content" test -s "$LOG_FILE"
 assert_true "raw_output events present" grep -q '"type":"raw_output"' "$LOG_FILE"
-assert_true "hello text captured" grep -q 'pst-hello-42' "$LOG_FILE"
+assert_true "hello text captured" grep -q 'pluk-hello-42' "$LOG_FILE"
 
 echo ""
 echo "=== Sequence numbers ==="
@@ -126,8 +126,8 @@ fi
 echo ""
 echo "=== Subscriber ==="
 
-SUB_OUT="/tmp/pst-sub-test-$$.txt"
-"${BIN_DIR}/pst-subscribe" "$TEST_SESSION" --last 5 --no-follow > "$SUB_OUT" 2>/dev/null
+SUB_OUT="/tmp/pluk-sub-test-$$.txt"
+"${BIN_DIR}/pluk-subscribe" "$TEST_SESSION" --last 5 --no-follow > "$SUB_OUT" 2>/dev/null
 assert_true "subscriber returned events" test -s "$SUB_OUT"
 
 sub_count=$(wc -l < "$SUB_OUT" | tr -d ' ')
@@ -137,8 +137,8 @@ rm -f "$SUB_OUT"
 echo ""
 echo "=== Subscriber --filter ==="
 
-FILTER_OUT="/tmp/pst-filter-test-$$.txt"
-"${BIN_DIR}/pst-subscribe" "$TEST_SESSION" --filter "raw_output" --no-follow > "$FILTER_OUT" 2>/dev/null
+FILTER_OUT="/tmp/pluk-filter-test-$$.txt"
+"${BIN_DIR}/pluk-subscribe" "$TEST_SESSION" --filter "raw_output" --no-follow > "$FILTER_OUT" 2>/dev/null
 filter_count=$(wc -l < "$FILTER_OUT" | tr -d ' ')
 assert_true "filtered subscriber only raw_output (count=$filter_count)" test "$filter_count" -gt 0
 
@@ -151,17 +151,17 @@ rm -f "$FILTER_OUT"
 echo ""
 echo "=== Multiple output events ==="
 
-for n in pst-multi-a pst-multi-b pst-multi-c; do
+for n in pluk-multi-a pluk-multi-b pluk-multi-c; do
   tmux send-keys -t "$TEST_SESSION" "echo $n" Enter
   sleep 3
 done
 # Wait for last event to appear
 for _mw in 1 2 3 4 5 6 7 8; do
-  grep -q "pst-multi-c" "$LOG_FILE" 2>/dev/null && break
+  grep -q "pluk-multi-c" "$LOG_FILE" 2>/dev/null && break
   sleep 2
 done
 
-for n in pst-multi-a pst-multi-b pst-multi-c; do
+for n in pluk-multi-a pluk-multi-b pluk-multi-c; do
   assert_true "captured $n" grep -q "$n" "$LOG_FILE"
 done
 
@@ -181,32 +181,32 @@ for field in v ts seq pid session pane source type data; do
 done
 
 echo ""
-echo "=== Bidirectional (pst-send) ==="
+echo "=== Bidirectional (pluk-send) ==="
 
-CMD_FIFO="$PST_RUN_DIR/commands/${TEST_SESSION}.fifo"
+CMD_FIFO="$PLUK_RUN_DIR/commands/${TEST_SESSION}.fifo"
 assert_true "command FIFO exists" test -p "$CMD_FIFO"
 
 before_count=$(wc -l < "$LOG_FILE" | tr -d ' ')
-"${BIN_DIR}/pst-send" --session "$TEST_SESSION" --text "echo sent-via-pst" --enter 2>/dev/null &
+"${BIN_DIR}/pluk-send" --session "$TEST_SESSION" --text "echo sent-via-pluk" --enter 2>/dev/null &
 SEND_PID=$!
 
 # Wait for the sent text to appear in the log
 for _sw in 1 2 3 4 5 6; do
-  grep -q "sent-via-pst" "$LOG_FILE" 2>/dev/null && break
+  grep -q "sent-via-pluk" "$LOG_FILE" 2>/dev/null && break
   sleep 2
 done
 
 TESTS=$((TESTS + 1))
-if tmux capture-pane -t "$TEST_SESSION" -p 2>/dev/null | grep -q "sent-via-pst"; then
+if tmux capture-pane -t "$TEST_SESSION" -p 2>/dev/null | grep -q "sent-via-pluk"; then
   PASS=$((PASS + 1))
-  printf '  \033[32mPASS\033[0m pst-send text appeared in pane\n'
+  printf '  \033[32mPASS\033[0m pluk-send text appeared in pane\n'
 else
   FAIL=$((FAIL + 1))
-  printf '  \033[31mFAIL\033[0m pst-send text not found in pane\n'
+  printf '  \033[31mFAIL\033[0m pluk-send text not found in pane\n'
 fi
 
 after_count=$(wc -l < "$LOG_FILE" | tr -d ' ')
-assert_true "new events after pst-send (before=$before_count after=$after_count)" test "$after_count" -gt "$before_count"
+assert_true "new events after pluk-send (before=$before_count after=$after_count)" test "$after_count" -gt "$before_count"
 
 wait "$SEND_PID" 2>/dev/null || true
 

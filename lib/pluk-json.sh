@@ -1,5 +1,5 @@
 #!/bin/bash
-# pst-json.sh — pure-bash JSON builder (no jq dependency)
+# pluk-json.sh — pure-bash JSON builder (no jq dependency)
 
 json_escape() {
   local s="$1"
@@ -21,22 +21,22 @@ json_int() {
   printf '%d' "$1"
 }
 
-_PST_HAS_DATE_NS=""
-_pst_detect_date_ns() {
-  if [ -z "$_PST_HAS_DATE_NS" ]; then
+_PLUK_HAS_DATE_NS=""
+_pluk_detect_date_ns() {
+  if [ -z "$_PLUK_HAS_DATE_NS" ]; then
     local probe
     probe=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ 2>/dev/null || echo "")
     if echo "$probe" | grep -q 'N'; then
-      _PST_HAS_DATE_NS="no"
+      _PLUK_HAS_DATE_NS="no"
     else
-      _PST_HAS_DATE_NS="yes"
+      _PLUK_HAS_DATE_NS="yes"
     fi
   fi
 }
 
 _pst_timestamp() {
-  _pst_detect_date_ns
-  if [ "$_PST_HAS_DATE_NS" = "yes" ]; then
+  _pluk_detect_date_ns
+  if [ "$_PLUK_HAS_DATE_NS" = "yes" ]; then
     date -u +%Y-%m-%dT%H:%M:%S.%3NZ
   else
     date -u +%Y-%m-%dT%H:%M:%S.000Z

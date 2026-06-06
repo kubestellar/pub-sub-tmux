@@ -1,7 +1,7 @@
 #!/bin/bash
-# pst-send — send commands back to a tmux session via the pub-sub command FIFO
+# pluk-send — send commands back to a tmux session via the pub-sub command FIFO
 #
-# Usage: pst-send --session <name> --text "some text" [--enter] [--key C-c]
+# Usage: pluk-send --session <name> --text "some text" [--enter] [--key C-c]
 set -euo pipefail
 
 _resolve_script() {
@@ -16,18 +16,18 @@ _resolve_script() {
 }
 SCRIPT_DIR="$(_resolve_script "$0")"
 [ -z "$SCRIPT_DIR" ] && SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -f "${SCRIPT_DIR}/../lib/pst-common.sh" ]; then
+if [ -f "${SCRIPT_DIR}/../lib/pluk-common.sh" ]; then
   LIB_DIR="${SCRIPT_DIR}/../lib"
-elif [ -f "${SCRIPT_DIR}/../lib/pub-sub-tmux/pst-common.sh" ]; then
-  LIB_DIR="${SCRIPT_DIR}/../lib/pub-sub-tmux"
+elif [ -f "${SCRIPT_DIR}/../lib/pluk/pluk-common.sh" ]; then
+  LIB_DIR="${SCRIPT_DIR}/../lib/pluk"
 else
-  echo "error: cannot find pst-common.sh" >&2; exit 1
+  echo "error: cannot find pluk-common.sh" >&2; exit 1
 fi
 
-# shellcheck source=../lib/pst-common.sh
-source "${LIB_DIR}/pst-common.sh"
-# shellcheck source=../lib/pst-json.sh
-source "${LIB_DIR}/pst-json.sh"
+# shellcheck source=../lib/pluk-common.sh
+source "${LIB_DIR}/pluk-common.sh"
+# shellcheck source=../lib/pluk-json.sh
+source "${LIB_DIR}/pluk-json.sh"
 
 SESSION=""
 TEXT=""
@@ -36,7 +36,7 @@ KEY=""
 
 usage() {
   cat <<'EOF'
-Usage: pst-send --session <name> [options]
+Usage: pluk-send --session <name> [options]
 
 Options:
   --session <name>  Tmux session name (required)
@@ -71,11 +71,11 @@ if [ -z "$TEXT" ] && [ -z "$KEY" ] && [ "$ENTER" != "true" ]; then
   usage
 fi
 
-CMD_FIFO="$(pst_cmd_fifo "$SESSION")"
+CMD_FIFO="$(pluk_cmd_fifo "$SESSION")"
 
 if [ ! -p "$CMD_FIFO" ]; then
   echo "error: no command FIFO for session '$SESSION' at $CMD_FIFO" >&2
-  echo "hint: is pst-publish running for this session?" >&2
+  echo "hint: is pluk-publish running for this session?" >&2
   exit 1
 fi
 
@@ -102,7 +102,7 @@ _pst_write_fifo() {
       if [ "$elapsed" -ge "$SEND_TIMEOUT_SEC" ]; then
         kill -9 "$wpid" 2>/dev/null
         wait "$wpid" 2>/dev/null
-        echo "error: write to FIFO timed out after ${SEND_TIMEOUT_SEC}s — is pst-publish running?" >&2
+        echo "error: write to FIFO timed out after ${SEND_TIMEOUT_SEC}s — is pluk-publish running?" >&2
         exit 1
       fi
     done

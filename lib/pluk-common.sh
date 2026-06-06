@@ -1,21 +1,21 @@
 #!/bin/bash
-# pst-common.sh — shared constants, directories, logging
+# pluk-common.sh — shared constants, directories, logging
 
-PST_VERSION="0.1.0"
-PST_RUN_DIR="${PST_RUN_DIR:-/var/run/pub-sub-tmux}"
-PST_LOG_DIR="${PST_RUN_DIR}/logs"
-PST_CMD_DIR="${PST_RUN_DIR}/commands"
-PST_CONFIG_DIR="${PST_CONFIG_DIR:-/etc/pub-sub-tmux}"
-_PST_PATTERNS_EXPLICIT="${PST_PATTERNS_DIR:-}"
-PST_PATTERNS_DIR="${PST_PATTERNS_DIR:-${PST_CONFIG_DIR}/patterns.d}"
+PLUK_VERSION="0.1.0"
+PLUK_RUN_DIR="${PLUK_RUN_DIR:-/var/run/pluk}"
+PLUK_LOG_DIR="${PLUK_RUN_DIR}/logs"
+PLUK_CMD_DIR="${PLUK_RUN_DIR}/commands"
+PLUK_CONFIG_DIR="${PLUK_CONFIG_DIR:-/etc/pluk}"
+_PLUK_PATTERNS_EXPLICIT="${PLUK_PATTERNS_DIR:-}"
+PLUK_PATTERNS_DIR="${PLUK_PATTERNS_DIR:-${PLUK_CONFIG_DIR}/patterns.d}"
 
-PST_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ ! -d "$PST_PATTERNS_DIR" ] && [ -z "$_PST_PATTERNS_EXPLICIT" ]; then
-  # Only try fallbacks when PST_PATTERNS_DIR was not explicitly set
-  if [ -d "${PST_SCRIPT_DIR}/../config/patterns.d" ]; then
-    PST_PATTERNS_DIR="${PST_SCRIPT_DIR}/../config/patterns.d"
-  elif [ -d "${PST_SCRIPT_DIR}/../../etc/pub-sub-tmux/patterns.d" ]; then
-    PST_PATTERNS_DIR="${PST_SCRIPT_DIR}/../../etc/pub-sub-tmux/patterns.d"
+PLUK_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -d "$PLUK_PATTERNS_DIR" ] && [ -z "$_PLUK_PATTERNS_EXPLICIT" ]; then
+  # Only try fallbacks when PLUK_PATTERNS_DIR was not explicitly set
+  if [ -d "${PLUK_SCRIPT_DIR}/../config/patterns.d" ]; then
+    PLUK_PATTERNS_DIR="${PLUK_SCRIPT_DIR}/../config/patterns.d"
+  elif [ -d "${PLUK_SCRIPT_DIR}/../../etc/pluk/patterns.d" ]; then
+    PLUK_PATTERNS_DIR="${PLUK_SCRIPT_DIR}/../../etc/pluk/patterns.d"
   fi
 fi
 
@@ -23,8 +23,8 @@ pst_log() {
   printf '[%s] pst: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >&2
 }
 
-pst_ensure_dirs() {
-  for d in "$PST_LOG_DIR" "$PST_CMD_DIR"; do
+pluk_ensure_dirs() {
+  for d in "$PLUK_LOG_DIR" "$PLUK_CMD_DIR"; do
     if [ ! -d "$d" ]; then
       mkdir -p "$d" 2>/dev/null || sudo mkdir -p "$d" 2>/dev/null || {
         echo "pst: error: cannot create directory: $d" >&2
@@ -35,17 +35,17 @@ pst_ensure_dirs() {
   done
 }
 
-pst_log_file() {
+pluk_log_file() {
   local session="$1"
-  printf '%s/%s.jsonl' "$PST_LOG_DIR" "$session"
+  printf '%s/%s.jsonl' "$PLUK_LOG_DIR" "$session"
 }
 
-pst_cmd_fifo() {
+pluk_cmd_fifo() {
   local session="$1"
-  printf '%s/%s.fifo' "$PST_CMD_DIR" "$session"
+  printf '%s/%s.fifo' "$PLUK_CMD_DIR" "$session"
 }
 
-pst_json_field() {
+pluk_json_field() {
   local field="$1" input
   input=$(cat)
   if command -v python3 &>/dev/null; then
@@ -55,7 +55,7 @@ pst_json_field() {
   fi
 }
 
-pst_json_int_field() {
+pluk_json_int_field() {
   local field="$1" input
   input=$(cat)
   if command -v python3 &>/dev/null; then
@@ -65,7 +65,7 @@ pst_json_int_field() {
   fi
 }
 
-pst_json_bool_field() {
+pluk_json_bool_field() {
   local field="$1" input
   input=$(cat)
   if command -v python3 &>/dev/null; then
@@ -75,7 +75,7 @@ pst_json_bool_field() {
   fi
 }
 
-pst_ensure_fifo() {
+pluk_ensure_fifo() {
   local fifo="$1"
   if [ ! -p "$fifo" ]; then
     rm -f "$fifo" 2>/dev/null

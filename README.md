@@ -1,6 +1,6 @@
-# pub-sub-tmux
+# Pluk
 
-Turn non-deterministic terminal output from AI coding agents into deterministic, structured events.
+Pluk structured events from non-deterministic AI agent terminal output.
 
 AI coding agents (Claude Code, GitHub Copilot CLI, Gemini CLI, Goose, etc.) produce rich but unstructured terminal output — spinners, tool calls, rate limit messages, login prompts, error states. This project captures that output via `tmux pipe-pane` and classifies it into a structured JSONL event stream that any system can subscribe to.
 
@@ -8,23 +8,23 @@ AI coding agents (Claude Code, GitHub Copilot CLI, Gemini CLI, Goose, etc.) prod
 
 ```bash
 # One-liner install
-curl -fsSL https://raw.githubusercontent.com/kubestellar/pub-sub-tmux/main/install-remote.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kubestellar/pluk/main/install-remote.sh | bash
 
 # Or clone and install
-git clone https://github.com/kubestellar/pub-sub-tmux.git
-cd pub-sub-tmux && make install
+git clone https://github.com/kubestellar/pluk.git
+cd pluk && make install
 
 # Attach publisher to an existing tmux session
-tmux pipe-pane -t mysession -o "pst-publish --session mysession --cli claude 2>/dev/null"
+tmux pipe-pane -t mysession -o "pluk-publish --session mysession --cli claude 2>/dev/null"
 
 # Subscribe to events (in another terminal)
-pst-subscribe mysession
+pluk-subscribe mysession
 
 # Subscribe with filter
-pst-subscribe mysession --filter "rate_limit,state_change,error"
+pluk-subscribe mysession --filter "rate_limit,state_change,error"
 
 # Send a command back to the session
-pst-send --session mysession --text "read CLAUDE.md" --enter
+pluk-send --session mysession --text "read CLAUDE.md" --enter
 ```
 
 ## Event types
@@ -42,7 +42,7 @@ pst-send --session mysession --text "read CLAUDE.md" --enter
 | `error` | Error in output | "Error:", "panic:" |
 | `model_changed` | Model was switched | Model name in output |
 | `session_ended` | CLI session ended | "Session ended" |
-| `command_received` | Command sent via pst-send | Bidirectional input |
+| `command_received` | Command sent via pluk-send | Bidirectional input |
 
 ## Event schema
 
@@ -79,17 +79,17 @@ Adding a new CLI is a single pattern file — no code changes needed.
 
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌──────────────┐
-│  tmux session    │────▶│ pst-publish  │────▶│ session.jsonl│
+│  tmux session    │────▶│ pluk-publish  │────▶│ session.jsonl│
 │  (any AI CLI)    │     │ (pipe-pane)  │     │ (append-only)│
 └─────────────────┘     └──────────────┘     └──────┬───────┘
                                                      │
                               ┌───────────────┐      │ tail -f
-                              │ pst-subscribe │◀─────┘
+                              │ pluk-subscribe │◀─────┘
                               │ (any number)  │
                               └───────────────┘
                                                      │
                               ┌───────────────┐      │
-                              │ pst-send      │─────▶│ command FIFO
+                              │ pluk-send      │─────▶│ command FIFO
                               │ (bidirectional)│      │
                               └───────────────┘      ▼
                                               tmux send-keys
@@ -103,23 +103,23 @@ Adding a new CLI is a single pattern file — no code changes needed.
 ## Docker / Container install
 
 ```dockerfile
-# Install pub-sub-tmux in a container image
-RUN git clone --depth 1 https://github.com/kubestellar/pub-sub-tmux.git /tmp/pst && \
-    bash /tmp/pst/install.sh /usr/local && \
-    rm -rf /tmp/pst && \
-    mkdir -p /var/run/pub-sub-tmux/logs /var/run/pub-sub-tmux/commands
+# Install pluk in a container image
+RUN git clone --depth 1 https://github.com/kubestellar/pluk.git /tmp/pst && \
+    bash /tmp/pluk/install.sh /usr/local && \
+    rm -rf /tmp/pluk && \
+    mkdir -p /var/run/pluk/logs /var/run/pluk/commands
 ```
 
-The runtime directories under `/var/run/pub-sub-tmux/` must exist before `pst-publish` runs. If your container uses a tmpfs `/var/run`, create them at startup:
+The runtime directories under `/var/run/pluk/` must exist before `pluk-publish` runs. If your container uses a tmpfs `/var/run`, create them at startup:
 
 ```bash
-mkdir -p /var/run/pub-sub-tmux/logs /var/run/pub-sub-tmux/commands
+mkdir -p /var/run/pluk/logs /var/run/pluk/commands
 ```
 
 Attach to a tmux session in your entrypoint or agent manager:
 
 ```bash
-tmux pipe-pane -t mysession -o "pst-publish --session mysession --cli claude"
+tmux pipe-pane -t mysession -o "pluk-publish --session mysession --cli claude"
 ```
 
 ## Dependencies

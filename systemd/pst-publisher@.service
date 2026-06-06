@@ -1,15 +1,15 @@
 [Unit]
-Description=pub-sub-tmux publisher for tmux session %i
+Description=pluk publisher for tmux session %i
 After=network.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 User=dev
-ExecStart=/bin/bash -c 'tmux has-session -t "%i" 2>/dev/null && tmux pipe-pane -t "%i" -o "exec pst-publish --session %i --cli ${PST_CLI:-claude}" || { echo "tmux session %i not found"; exit 1; }'
+ExecStart=/bin/bash -c 'tmux has-session -t "%i" 2>/dev/null && tmux pipe-pane -t "%i" -o "exec pluk-publish --session %i --cli ${PST_CLI:-claude}" || { echo "tmux session %i not found"; exit 1; }'
 ExecStop=/bin/bash -c 'tmux pipe-pane -t "%i" 2>/dev/null || true'
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-Environment=PST_RUN_DIR=/var/run/pub-sub-tmux
+Environment=PLUK_RUN_DIR=/var/run/pluk
 
 [Install]
 WantedBy=multi-user.target
