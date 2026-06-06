@@ -1,4 +1,4 @@
-# Pluk
+# 🎸 Pluk
 
 Pluk structured events from non-deterministic AI agent terminal output.
 
