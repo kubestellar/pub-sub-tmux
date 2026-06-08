@@ -110,7 +110,7 @@ if [ ! -f "$LOG_FILE" ]; then
   fi
 fi
 
-_pst_fast_type() {
+_pluk_fast_type() {
   echo "$1" | sed -n 's/.*"type"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
 }
 
@@ -130,7 +130,7 @@ should_include() {
   fi
   if [ -n "$FILTER" ]; then
     local type
-    type=$(_pst_fast_type "$line")
+    type=$(_pluk_fast_type "$line")
     if ! echo ",$FILTER," | grep -Fq ",$type,"; then
       return 1
     fi

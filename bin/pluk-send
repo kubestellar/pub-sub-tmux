@@ -81,7 +81,7 @@ fi
 
 SEND_TIMEOUT_SEC=5
 
-_pst_write_fifo() {
+_pluk_write_fifo() {
   local msg="$1"
   local lockfile="${CMD_FIFO}.lock"
   if command -v flock &>/dev/null; then
@@ -111,7 +111,7 @@ _pst_write_fifo() {
 }
 
 if [ -n "$TEXT" ] || [ "$ENTER" = "true" ]; then
-  _pst_write_fifo "{\"type\":\"send_keys\",\"text\":\"$(json_escape "$TEXT")\",\"enter\":$ENTER}"
+  _pluk_write_fifo "{\"type\":\"send_keys\",\"text\":\"$(json_escape "$TEXT")\",\"enter\":$ENTER}"
 elif [ -n "$KEY" ]; then
-  _pst_write_fifo "{\"type\":\"send_special\",\"key\":\"$(json_escape "$KEY")\"}"
+  _pluk_write_fifo "{\"type\":\"send_special\",\"key\":\"$(json_escape "$KEY")\"}"
 fi

@@ -70,7 +70,7 @@ while [[ $# -gt 0 ]]; do
     --pane)
       PANE="$2"
       if ! echo "$PANE" | grep -qE '^[0-9]+$'; then
-        pst_log "error: --pane must be numeric, got '$PANE'"
+        pluk_log "error: --pane must be numeric, got '$PANE'"
         exit 1
       fi
       shift 2 ;;
@@ -78,22 +78,22 @@ while [[ $# -gt 0 ]]; do
     --source)   SOURCE="$2"; shift 2 ;;
     --no-raw)   EMIT_RAW="false"; shift ;;
     -h|--help)  usage ;;
-    *)          pst_log "unknown option: $1"; usage ;;
+    *)          pluk_log "unknown option: $1"; usage ;;
   esac
 done
 
 if [ -z "$SESSION" ]; then
-  pst_log "error: --session is required"
+  pluk_log "error: --session is required"
   usage
 fi
 
 if echo "$SESSION" | grep -qE '[[:space:]/\\:]'; then
-  pst_log "warning: session name '$SESSION' contains spaces, slashes, or colons — may cause issues with tmux and file paths"
+  pluk_log "warning: session name '$SESSION' contains spaces, slashes, or colons — may cause issues with tmux and file paths"
 fi
 
 MAX_SESSION_LEN=200
 if [ "${#SESSION}" -gt "$MAX_SESSION_LEN" ]; then
-  pst_log "error: session name too long (${#SESSION} chars, max $MAX_SESSION_LEN) — filesystem filename limit"
+  pluk_log "error: session name too long (${#SESSION} chars, max $MAX_SESSION_LEN) — filesystem filename limit"
   exit 1
 fi
 
@@ -103,13 +103,13 @@ LOG_FILE="$(pluk_log_file "$SESSION")"
 CMD_FIFO="$(pluk_cmd_fifo "$SESSION")"
 
 if [ -d "$LOG_FILE" ]; then
-  pst_log "error: log path is a directory: $LOG_FILE"
+  pluk_log "error: log path is a directory: $LOG_FILE"
   exit 1
 fi
 
 touch "$LOG_FILE" 2>/dev/null
 if [ ! -w "$LOG_FILE" ]; then
-  pst_log "error: cannot write to log file: $LOG_FILE"
+  pluk_log "error: cannot write to log file: $LOG_FILE"
   exit 1
 fi
 
@@ -120,10 +120,10 @@ if [ -f "$LOG_FILE" ]; then
 fi
 
 if [ -n "$CLI" ]; then
-  if pst_load_patterns "$CLI"; then
-    pst_log "loaded patterns for $CLI"
+  if pluk_load_patterns "$CLI"; then
+    pluk_log "loaded patterns for $CLI"
   else
-    pst_log "warning: no pattern file for cli=$CLI"
+    pluk_log "warning: no pattern file for cli=$CLI"
   fi
 fi
 
@@ -186,7 +186,7 @@ if [ ! -t 0 ] && [ -z "${PLUK_KEEP_STDERR:-}" ]; then
   exec 2>/dev/null
 fi
 
-pst_log "publisher started: session=$SESSION pane=$PANE cli=$CLI source=$SOURCE"
+pluk_log "publisher started: session=$SESSION pane=$PANE cli=$CLI source=$SOURCE"
 
 while IFS= read -r raw_line; do
   clean=$(echo "$raw_line" | strip_ansi)
@@ -206,6 +206,6 @@ while IFS= read -r raw_line; do
   fi
 
   if [ -n "$_PST_PATTERNS_LOADED" ]; then
-    pst_classify_line "$clean" "$SESSION" "$PANE" "$SOURCE" SEQ >> "$LOG_FILE"
+    pluk_classify_line "$clean" "$SESSION" "$PANE" "$SOURCE" SEQ >> "$LOG_FILE"
   fi
 done

@@ -19,7 +19,7 @@ if [ ! -d "$PLUK_PATTERNS_DIR" ] && [ -z "$_PLUK_PATTERNS_EXPLICIT" ]; then
   fi
 fi
 
-pst_log() {
+pluk_log() {
   printf '[%s] pst: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >&2
 }
 

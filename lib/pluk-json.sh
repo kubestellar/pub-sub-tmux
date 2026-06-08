@@ -34,7 +34,7 @@ _pluk_detect_date_ns() {
   fi
 }
 
-_pst_timestamp() {
+_pluk_timestamp() {
   _pluk_detect_date_ns
   if [ "$_PLUK_HAS_DATE_NS" = "yes" ]; then
     date -u +%Y-%m-%dT%H:%M:%S.%3NZ
@@ -48,7 +48,7 @@ _PST_PUB_PID="$$"
 json_event() {
   local session="$1" pane="$2" source="$3" seq="$4" type="$5" data="$6"
   local ts
-  ts=$(_pst_timestamp)
+  ts=$(_pluk_timestamp)
   printf '{"v":1,"ts":"%s","seq":%d,"pid":%d,"session":"%s","pane":"%s","source":"%s","type":"%s","data":%s}\n' \
     "$ts" "$seq" "$_PST_PUB_PID" "$(json_escape "$session")" "$(json_escape "$pane")" \
     "$(json_escape "$source")" "$(json_escape "$type")" "$data"
