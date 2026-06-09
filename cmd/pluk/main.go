@@ -304,7 +304,7 @@ func cmdSend(args []string) {
 	tmuxArgs := []string{"send-keys", "-t", session}
 
 	if text != "" {
-		tmuxArgs = append(tmuxArgs, text)
+		tmuxArgs = append(tmuxArgs, "-l", text)
 		if enter {
 			tmuxArgs = append(tmuxArgs, "Enter")
 		}
